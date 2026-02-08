@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stylist Portal - Hair Salon</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Stylist Portal</h1>
+      <div id="user-info" style="display: none;">
+        <span id="user-name"></span>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Login Section -->
+    <div id="auth-section">
+      <h2>Stylist Login</h2>
+      <form onsubmit="handleLogin(event)">
+        <input type="email" id="login-email" placeholder="Email" required>
+        <input type="password" id="login-password" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+      <div id="login-error" class="error-message"></div>
+    </div>
+
+    <!-- Appointments Section -->
+    <div id="appointments-section" style="display: none;">
+      <h2>Upcoming Appointments</h2>
+      <div id="appointments-list"></div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>Edit Appointment</h2>
+        <form id="edit-form" onsubmit="handleEditAppointment(event)">
+          <input type="hidden" id="edit-appointment-id">
+          <div class="form-group">
+            <label>Date:</label>
+            <input type="date" id="edit-date" required>
+          </div>
+          <div class="form-group">
+            <label>Time:</label>
+            <input type="time" id="edit-time" required>
+          </div>
+          <div class="form-group">
+            <label>Status:</label>
+            <select id="edit-status" required>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no-show">No-Show</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notes:</label>
+            <textarea id="edit-notes" rows="3"></textarea>
+          </div>
+          <button type="submit">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/stylist.js"></script>
+</body>
+</html>

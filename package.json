@@ -1,0 +1,26 @@
+{
+  "name": "appts",
+  "version": "2.0.0",
+  "description": "Serverless appointment management system using Azure Functions and Table Storage",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": ["appointment", "booking", "haircut", "azure", "serverless", "functions"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/functions": "^4.11.2",
+    "@azure/data-tables": "^13.3.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.7",
+    "twilio": "^4.19.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
