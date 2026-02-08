@@ -168,3 +168,4 @@ Perfect for small businesses with variable traffic patterns!
 ## License
 
 See [LICENSE](LICENSE) file for details.
+
