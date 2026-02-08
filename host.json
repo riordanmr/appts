@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "logging": {
+    "fileLoggingMode": "always",
+    "level": "verbose"
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.AppService.Extensions",
+    "version": "[1.*, 2.0.0)"
+  }
+}
