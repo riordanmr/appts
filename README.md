@@ -1,6 +1,16 @@
-# Hair Salon Appointment Management System
+# Hair Salon Appointment Management System (Serverless)
 
-A cost-effective Azure web application for managing appointments for small haircut businesses.
+A **serverless**, cost-optimized Azure application for managing appointments at small haircut businesses using Azure Functions and Azure Table Storage.
+
+## 🎯 Key Features
+
+**No services running all the time!** This app uses Azure Functions (serverless compute) and Azure Table Storage instead of always-on VMs or databases.
+
+### Architecture Highlights
+- ⚡ **Event-driven**: Functions only run when triggered (HTTP requests or scheduled times)
+- 💰 **Cost-effective**: $0-2/month vs $15-20/month for VM-based solutions
+- 📈 **Auto-scaling**: Automatically handles traffic spikes
+- 🔒 **Secure**: Managed Azure services with built-in security
 
 ## Features
 
@@ -24,184 +34,137 @@ A cost-effective Azure web application for managing appointments for small hairc
 
 ## Technology Stack
 
-- **Backend**: Node.js + Express
-- **Database**: SQLite (lightweight, cost-effective)
+- **Compute**: Azure Functions (serverless)
+- **Database**: Azure Table Storage (NoSQL, serverless)
 - **Authentication**: JWT (JSON Web Tokens)
 - **Email**: SendGrid (100 free emails/day)
 - **SMS**: Twilio (pay-as-you-go)
 - **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Hosting**: Azure App Service
+
+## Cost Breakdown 💰
+
+### Monthly Costs
+- **Azure Functions**: $0 (1M free executions/month)
+- **Azure Table Storage**: $0 (100GB free with consumption plan)
+- **SendGrid**: $0 (free tier: 100 emails/day)
+- **Twilio SMS**: ~$0.75-2/month (pay-per-SMS)
+
+**Total: $0-2/month** 🎉
+
+### Comparison
+- **Previous (VM-based)**: $15-20/month
+- **New (Serverless)**: $0-2/month  
+- **Annual Savings**: ~$200/year
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 18+ installed
-- npm or yarn package manager
+### Local Development
 
-### Installation
-
-1. Clone the repository:
+1. **Install prerequisites**:
 ```bash
-git clone <repository-url>
-cd appts
-```
+# Install Azure Functions Core Tools
+npm install -g azure-functions-core-tools@4
 
-2. Install dependencies:
-```bash
+# Install Azurite (storage emulator)
+npm install -g azurite
+
+# Install dependencies
 npm install
 ```
 
-3. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
+2. **Create local.settings.json**:
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "JWT_SECRET": "test-secret",
+    "BUSINESS_NAME": "Test Salon",
+    "BUSINESS_HOURS_START": "9",
+    "BUSINESS_HOURS_END": "18"
+  }
+}
 ```
 
-4. Start the server:
+3. **Run locally**:
 ```bash
+# Terminal 1: Start storage emulator
+azurite
+
+# Terminal 2: Start functions
 npm start
+
+# Access at http://localhost:7071
 ```
 
-5. Access the application:
-- Customer portal: http://localhost:3000
-- Stylist portal: http://localhost:3000/stylist
+## Deployment to Azure
 
-## Default Credentials
+See [DEPLOYMENT_SERVERLESS.md](DEPLOYMENT_SERVERLESS.md) for complete deployment instructions.
 
-**Admin/Testing Account**:
-- Email: admin@salon.com
-- Password: admin123
-
-**Adding Stylists**:
-
-To add a new stylist, use the included script:
+### Quick Deploy (Azure CLI)
 ```bash
-node add-stylist.js
+# Create Function App
+az functionapp create \
+  --name your-app-name \
+  --resource-group your-rg \
+  --consumption-plan-location eastus \
+  --runtime node \
+  --runtime-version 18 \
+  --functions-version 4 \
+  --storage-account your-storage
+
+# Deploy code
+func azure functionapp publish your-app-name
 ```
-
-Or add directly via SQL:
-```bash
-# Connect to the database and insert a user, then a stylist profile
-# See add-stylist.js for example code
-```
-
-**Important**: Change default passwords in production!
-
-## Configuration
-
-Edit `.env` file to configure:
-- Server port
-- JWT secret
-- Email settings (SendGrid)
-- SMS settings (Twilio)
-- Business hours
-- Business name
-
-See `.env.example` for all available options.
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed Azure deployment instructions.
-
-### Quick Deploy to Azure
-
-1. Create Azure App Service (Node 18, Linux)
-2. Configure environment variables
-3. Deploy via GitHub Actions or Azure CLI
-4. Set up SendGrid and Twilio accounts
-
-Estimated cost: **~$15-20/month**
 
 ## Project Structure
 
 ```
 appts/
-├── database/
-│   └── db.js              # Database setup and initialization
-├── middleware/
-│   └── auth.js            # Authentication middleware
-├── routes/
-│   ├── auth.js            # Authentication routes
-│   ├── appointments.js    # Appointment management routes
-│   ├── services.js        # Service listing routes
-│   └── stylists.js        # Stylist management routes
-├── services/
-│   └── notifications.js   # Email and SMS notifications
+├── src/
+│   ├── functions/
+│   │   ├── auth.js              # Registration & login
+│   │   ├── appointments.js      # Appointment CRUD
+│   │   ├── services.js          # Service listings
+│   │   ├── stylists.js          # Stylist listings
+│   │   ├── reminders.js         # Timer-triggered reminders
+│   │   └── static.js            # Serve HTML/CSS/JS
+│   └── shared/
+│       ├── tableStorage.js      # Azure Table Storage operations
+│       └── utils/
+│           ├── auth.js          # JWT authentication
+│           └── notifications.js # Email & SMS
 ├── public/
-│   ├── index.html         # Customer portal
-│   ├── stylist.html       # Stylist portal
+│   ├── index.html               # Customer portal
+│   ├── stylist.html             # Stylist portal
 │   ├── css/
-│   │   └── style.css      # Styles
+│   │   └── style.css            # Styles
 │   └── js/
-│       ├── app.js         # Customer portal logic
-│       └── stylist.js     # Stylist portal logic
-├── server.js              # Main application entry point
-├── package.json           # Dependencies
-└── .env.example           # Environment configuration template
+│       ├── app.js               # Customer portal logic
+│       └── stylist.js           # Stylist portal logic
+├── host.json                    # Azure Functions config
+├── package.json                 # Dependencies
+└── .env.example                 # Configuration template
 ```
 
-## Features in Detail
+## Why Serverless?
 
-### Appointment Booking Flow
-1. Customer creates account or logs in
-2. Selects service from available options
-3. Chooses preferred stylist or "Any Available"
-4. Picks date and time from available slots
-5. Receives instant confirmation via email and SMS
-6. Gets reminder 24 hours before appointment
+Traditional VM-based apps:
+- ❌ Pay for idle time (24/7 even with zero traffic)
+- ❌ Manual scaling configuration
+- ❌ Server maintenance and patching
+- ❌ Higher complexity
 
-### Stylist Management
-1. Stylist logs in to dedicated portal
-2. Views all upcoming appointments organized by date
-3. Can edit appointment details
-4. Can mark appointments as completed, cancelled, or no-show
-5. Can delete appointments if needed
+Serverless apps:
+- ✅ Pay only for execution time
+- ✅ Automatic scaling
+- ✅ Zero maintenance
+- ✅ Simpler deployment
 
-### Notification System
-- Automatic confirmation on booking
-- Reminder sent 24 hours before appointment
-- Uses email (SendGrid) and SMS (Twilio)
-- Cron job runs hourly to check for reminders
-
-## Cost Breakdown
-
-- **Azure App Service B1**: ~$13/month
-- **SendGrid Free Tier**: 100 emails/day (free)
-- **Twilio SMS**: ~$0.0075 per SMS (pay-as-you-go)
-- **Total**: ~$15-20/month for typical small salon
-
-## Security Features
-
-- Password hashing with bcrypt
-- JWT authentication
-- Protected API endpoints
-- Role-based access control
-- SQL injection prevention
-- HTTPS enforced on Azure
-
-## Future Enhancements
-
-Potential additions:
-- Admin panel for managing stylists
-- Calendar integration (Google Calendar, Outlook)
-- Payment processing
-- Multi-location support
-- Customer reviews and ratings
-- Appointment history and analytics
-- Mobile app
-
-## Support
-
-For issues or questions:
-1. Check [DEPLOYMENT.md](DEPLOYMENT.md) for deployment help
-2. Review application logs
-3. Check environment variables are set correctly
-4. Verify third-party service credentials
+Perfect for small businesses with variable traffic patterns!
 
 ## License
 
 See [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
