@@ -72,7 +72,20 @@ npm start
 - Email: admin@salon.com
 - Password: admin123
 
-**Important**: Change this password in production!
+**Adding Stylists**:
+
+To add a new stylist, use the included script:
+```bash
+node add-stylist.js
+```
+
+Or add directly via SQL:
+```bash
+# Connect to the database and insert a user, then a stylist profile
+# See add-stylist.js for example code
+```
+
+**Important**: Change default passwords in production!
 
 ## Configuration
 
