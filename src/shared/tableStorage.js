@@ -142,6 +142,7 @@ async function deleteAppointment(appointmentId) {
 async function getAvailableSlots(date, serviceId, stylistId) {
   // Get service to know duration
   const service = await servicesTable.getEntity('SERVICE', serviceId);
+  const slotDuration = service.durationMinutes;
   
   // Generate all possible slots
   const startHour = parseInt(process.env.BUSINESS_HOURS_START || 9);
@@ -154,21 +155,57 @@ async function getAvailableSlots(date, serviceId, stylistId) {
     }
   }
 
-  // Get booked appointments for that date
+  // Get booked appointments for that date with durations
   const filter = stylistId && stylistId !== 'any'
     ? `partitionKey eq 'APPOINTMENT' and appointmentDate eq '${date}' and stylistId eq '${stylistId}' and status eq 'scheduled'`
     : `partitionKey eq 'APPOINTMENT' and appointmentDate eq '${date}' and status eq 'scheduled'`;
   
-  const bookedSlots = new Set();
+  const bookedAppointments = [];
   const iterator = appointmentsTable.listEntities({ queryOptions: { filter } });
   
   for await (const appointment of iterator) {
-    const time = appointment.appointmentTime.substring(0, 5);
-    bookedSlots.add(time);
+    // Get service duration for each appointment
+    try {
+      const aptService = await servicesTable.getEntity('SERVICE', appointment.serviceId);
+      bookedAppointments.push({
+        time: appointment.appointmentTime.substring(0, 5),
+        duration: aptService.durationMinutes
+      });
+    } catch (e) {
+      // Skip if service not found
+      continue;
+    }
   }
 
-  // Filter out booked slots
-  return allSlots.filter(slot => !bookedSlots.has(slot));
+  // Helper function to check if times overlap
+  const timesOverlap = (start1, duration1, start2, duration2) => {
+    const [h1, m1] = start1.split(':').map(Number);
+    const [h2, m2] = start2.split(':').map(Number);
+    const start1Min = h1 * 60 + m1;
+    const start2Min = h2 * 60 + m2;
+    const end1Min = start1Min + duration1;
+    const end2Min = start2Min + duration2;
+    
+    // Check if intervals overlap
+    return (start1Min < end2Min && end1Min > start2Min);
+  };
+
+  // Filter out slots that would overlap with existing appointments
+  return allSlots.filter(slot => {
+    // Check if this slot + service duration would fit before business end
+    const [slotHour, slotMin] = slot.split(':').map(Number);
+    const slotEndMin = slotHour * 60 + slotMin + slotDuration;
+    const businessEndMin = endHour * 60;
+    
+    if (slotEndMin > businessEndMin) {
+      return false; // Service would extend past business hours
+    }
+    
+    // Check if slot overlaps with any booked appointment
+    return !bookedAppointments.some(apt => {
+      return timesOverlap(slot, slotDuration, apt.time, apt.duration);
+    });
+  });
 }
 
 async function getAllServices() {

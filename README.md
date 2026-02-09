@@ -1,171 +1,218 @@
-# Hair Salon Appointment Management System (Serverless)
+# Hair Salon Appointments - Serverless Edition
 
-A **serverless**, cost-optimized Azure application for managing appointments at small haircut businesses using Azure Functions and Azure Table Storage.
+**Pure serverless appointment booking system** using Azure Static Web Apps (frontend), Azure Functions (backend), and Table Storage (database). Zero servers, zero database management, minimal cost.
 
-## 🎯 Key Features
+## Architecture
 
-**No services running all the time!** This app uses Azure Functions (serverless compute) and Azure Table Storage instead of always-on VMs or databases.
+- **Frontend**: Static HTML/CSS/JS hosted on **Azure Static Web Apps** (free tier, CDN-backed)
+- **Backend**: Azure Functions for API endpoints (HTTP triggers)
+- **Database**: Azure Table Storage (NoSQL)
+- **Notifications**: SendGrid (email) + Twilio (SMS)
 
-### Architecture Highlights
-- ⚡ **Event-driven**: Functions only run when triggered (HTTP requests or scheduled times)
-- 💰 **Cost-effective**: $0-2/month vs $15-20/month for VM-based solutions
-- 📈 **Auto-scaling**: Automatically handles traffic spikes
-- 🔒 **Secure**: Managed Azure services with built-in security
+## Cost Efficiency
 
-## Features
-
-### Customer Portal
-- User registration and login
-- Browse services (haircut, coloring, highlights, etc.)
-- Select stylist or choose "Any Available"
-- View available time slots on calendar
-- Book appointments
-- Automatic email and SMS confirmation
-- Reminder notifications 1 day before appointment
-- View appointment history
-
-### Stylist Portal
-- Secure login for stylists and admin
-- View all upcoming appointments
-- Edit appointment details (date, time, status)
-- Delete appointments
-- See customer contact information
-- Update appointment status (scheduled, completed, cancelled, no-show)
-
-## Technology Stack
-
-- **Compute**: Azure Functions (serverless)
-- **Database**: Azure Table Storage (NoSQL, serverless)
-- **Authentication**: JWT (JSON Web Tokens)
-- **Email**: SendGrid (100 free emails/day)
-- **SMS**: Twilio (pay-as-you-go)
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-
-## Cost Breakdown 💰
-
-### Monthly Costs
-- **Azure Functions**: $0 (1M free executions/month)
-- **Azure Table Storage**: $0 (100GB free with consumption plan)
-- **SendGrid**: $0 (free tier: 100 emails/day)
-- **Twilio SMS**: ~$0.75-2/month (pay-per-SMS)
-
-**Total: $0-2/month** 🎉
-
-### Comparison
-- **Previous (VM-based)**: $15-20/month
-- **New (Serverless)**: $0-2/month  
-- **Annual Savings**: ~$200/year
-
-## Quick Start
-
-### Local Development
-
-1. **Install prerequisites**:
-```bash
-# Install Azure Functions Core Tools
-npm install -g azure-functions-core-tools@4
-
-# Install Azurite (storage emulator)
-npm install -g azurite
-
-# Install dependencies
-npm install
-```
-
-2. **Create local.settings.json**:
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
-    "JWT_SECRET": "test-secret",
-    "BUSINESS_NAME": "Test Salon",
-    "BUSINESS_HOURS_START": "9",
-    "BUSINESS_HOURS_END": "18"
-  }
-}
-```
-
-3. **Run locally**:
-```bash
-# Terminal 1: Start storage emulator
-azurite
-
-# Terminal 2: Start functions
-npm start
-
-# Access at http://localhost:7071
-```
-
-## Deployment to Azure
-
-See [DEPLOYMENT_SERVERLESS.md](DEPLOYMENT_SERVERLESS.md) for complete deployment instructions.
-
-### Quick Deploy (Azure CLI)
-```bash
-# Create Function App
-az functionapp create \
-  --name your-app-name \
-  --resource-group your-rg \
-  --consumption-plan-location eastus \
-  --runtime node \
-  --runtime-version 18 \
-  --functions-version 4 \
-  --storage-account your-storage
-
-# Deploy code
-func azure functionapp publish your-app-name
-```
+- ✅ **$0-1/month** for typical salon (free static hosting + consumption Functions)
+- ✅ **No servers to manage** - fully managed platform
+- ✅ **Auto-scaling** - handles traffic spikes automatically
+- ✅ **Global CDN** - static files cached worldwide
+- ✅ **1M free function executions/month**
 
 ## Project Structure
 
 ```
-appts/
-├── src/
-│   ├── functions/
-│   │   ├── auth.js              # Registration & login
-│   │   ├── appointments.js      # Appointment CRUD
-│   │   ├── services.js          # Service listings
-│   │   ├── stylists.js          # Stylist listings
-│   │   ├── reminders.js         # Timer-triggered reminders
-│   │   └── static.js            # Serve HTML/CSS/JS
-│   └── shared/
-│       ├── tableStorage.js      # Azure Table Storage operations
-│       └── utils/
-│           ├── auth.js          # JWT authentication
-│           └── notifications.js # Email & SMS
-├── public/
-│   ├── index.html               # Customer portal
-│   ├── stylist.html             # Stylist portal
-│   ├── css/
-│   │   └── style.css            # Styles
-│   └── js/
-│       ├── app.js               # Customer portal logic
-│       └── stylist.js           # Stylist portal logic
-├── host.json                    # Azure Functions config
-├── package.json                 # Dependencies
-└── .env.example                 # Configuration template
+/public/                    # Static frontend files
+  /css/style.css           # Styling
+  /js/app.js               # Customer portal logic
+  /js/stylist.js           # Stylist portal logic
+  /js/auth-utils.js        # Shared authentication utilities
+  index.html               # Customer booking page
+  stylist.html             # Stylist management page
+
+/src/
+  /functions/              # Azure Functions (HTTP triggers)
+    appointments.js        # Appointment CRUD operations
+    auth.js                # Login/register with JWT
+    services.js            # Get available services
+    stylists.js            # Get available stylists
+    reminders.js           # Timer trigger for SMS/email reminders
+  
+  /shared/
+    tableStorage.js        # Azure Table Storage operations
+    /utils/
+      auth.js              # JWT authentication middleware
+      notifications.js     # SendGrid & Twilio integration
 ```
 
-## Why Serverless?
+## Local Development
 
-Traditional VM-based apps:
-- ❌ Pay for idle time (24/7 even with zero traffic)
-- ❌ Manual scaling configuration
-- ❌ Server maintenance and patching
-- ❌ Higher complexity
+### Prerequisites
+- Node.js 18+
+- Azure Functions Core Tools: `npm install -g azure-functions-core-tools@4`
+- Azure Storage Emulator (Azurite): `npm install -g azurite`
 
-Serverless apps:
-- ✅ Pay only for execution time
-- ✅ Automatic scaling
-- ✅ Zero maintenance
-- ✅ Simpler deployment
+**Note:** For local static file serving during development, use a simple HTTP server:
+```bash
+npm install -g http-server
+# In another terminal:
+http-server ./public -p 8080
+```
+Then visit `http://localhost:8080/` while Functions run on `http://localhost:7071/api/`.
 
-Perfect for small businesses with variable traffic patterns!
+### Setup
+
+1. **Clone and install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Create `.env` file** (or local.settings.json for Azure Functions)
+   ```env
+   AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+   JWT_SECRET=your-dev-secret-key-change-in-production
+   BUSINESS_HOURS_START=9
+   BUSINESS_HOURS_END=18
+   ```
+
+3. **Start Azurite (local storage emulator)**
+   ```bash
+   azurite --silent --location ./azurite-data --debug ./azurite-debug.log
+   ```
+
+4. **Run Azure Functions locally**
+   ```bash
+   npm start
+   # Functions will be available at http://localhost:7071
+   ```
+
+### Serve Static Files
+
+During local development, you need to serve the static files separately:
+
+**Option 1: Using http-server (simplest)**
+```bash
+npx http-server ./public -p 8080
+# Open http://localhost:8080
+```
+
+**Option 2: Using Node.js built-in server (Node 17+)**
+```bash
+npx http-server ./public -p 8080
+```
+
+The Functions will run on `http://localhost:7071/api/*` - both will work together since the frontend JavaScript makes API calls to `/api/`.
+
+## Deployment
+
+See [DEPLOYMENT_SERVERLESS.md](DEPLOYMENT_SERVERLESS.md) for complete Azure deployment instructions.
+
+### Quick Deploy to Azure
+
+1. **Create Azure Static Web Apps resource**
+   - Select repository & branch
+   - Set build path to `/public` (or leave empty if pre-built)
+   - Leave API location as `api` (default)
+
+2. **Create Azure Function App** (Consumption plan, Linux)
+
+3. **Create Azure Storage Account** for Table Storage
+
+4. **Link them together** in Static Web Apps → API Configuration
+   - Backend resource: Your Function App
+   - Path: `/api`
+
+5. **Set environment variables** in Function App Configuration:
+   ```
+   AZURE_STORAGE_CONNECTION_STRING=<your-connection-string>
+   JWT_SECRET=<generate-secure-key>
+   (+ other optional vars for email/SMS)
+   ```
+
+6. **GitHub Actions auto-deploys** on every push!
+
+## Security Features
+
+✅ **JWT authentication** with no default secrets (enforced)  
+✅ **Bcrypt password hashing** (12 rounds)  
+✅ **Input validation** (email, phone, password strength)  
+✅ **XSS prevention** (no innerHTML, sanitized output)  
+✅ **SQL injection proof** (NoSQL Azure Tables)  
+✅ **Time slot overlap checking** (prevents double-booking)  
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Create customer account
+- `POST /api/auth/login` - Login (returns JWT token)
+
+### Services & Stylists
+- `GET /api/services` - List all services
+- `GET /api/stylists` - List all stylists
+
+### Appointments
+- `GET /api/appointments/availability` - Get available time slots
+- `POST /api/appointments` - Book appointment (auth required)
+- `GET /api/appointments/my-appointments` - Get customer's appointments
+- `GET /api/appointments/stylist-appointments` - Get stylist's schedule (auth required)
+- `PUT /api/appointments/:id` - Update appointment (stylist/admin only)
+- `DELETE /api/appointments/:id` - Cancel appointment (stylist/admin only)
+
+### Static Files
+- `GET /` - Customer portal
+- `GET /stylist` - Stylist portal
+- `GET /css/*` - CSS files
+- `GET /js/*` - JavaScript files
+
+## Environment Variables
+
+### Required
+- `JWT_SECRET` - Secret key for JWT tokens (generate with `openssl rand -base64 32`)
+- `AZURE_STORAGE_CONNECTION_STRING` - Azure Storage connection string
+
+### Optional (Notifications)
+- `EMAIL_API_KEY` - SendGrid API key (100 free emails/day)
+- `EMAIL_FROM` - Sender email address
+- `TWILIO_ACCOUNT_SID` - Twilio account SID
+- `TWILIO_AUTH_TOKEN` - Twilio auth token
+- `TWILIO_PHONE_NUMBER` - Twilio phone number
+- `BUSINESS_NAME` - Salon name for notifications
+- `BUSINESS_HOURS_START` - Opening hour (default: 9)
+- `BUSINESS_HOURS_END` - Closing hour (default: 18)
+
+## Default Admin User
+
+After first deployment, a default admin user is created:
+- Email: `admin@salon.com`
+- Password: `admin123`
+- **Change this immediately in production!**
+
+## Features
+
+### Customer Portal
+- Register/login
+- Browse services and stylists
+- View available time slots
+- Book appointments
+- View appointment history
+- Email & SMS confirmations
+
+### Stylist Portal
+- Login (stylist/admin only)
+- View scheduled appointments
+- Edit appointment details
+- Update appointment status
+- Cancel/reschedule appointments
+- View customer contact info
+
+### Automated Reminders
+- Timer function runs hourly
+- Sends reminders 24 hours before appointment
+- Email + SMS notifications
+- Marks reminders as sent to avoid duplicates
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
+ISC
 
+## Support
+
+For deployment issues, see [DEPLOYMENT_SERVERLESS.md](DEPLOYMENT_SERVERLESS.md).
