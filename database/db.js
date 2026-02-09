@@ -64,6 +64,24 @@ function initialize() {
     )
   `);
 
+  // Create indexes for performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_appointments_date 
+      ON appointments(appointment_date);
+    CREATE INDEX IF NOT EXISTS idx_appointments_stylist 
+      ON appointments(stylist_id);
+    CREATE INDEX IF NOT EXISTS idx_appointments_customer 
+      ON appointments(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_appointments_service 
+      ON appointments(service_id);
+    CREATE INDEX IF NOT EXISTS idx_users_email 
+      ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_role 
+      ON users(role);
+    CREATE INDEX IF NOT EXISTS idx_stylists_user_id 
+      ON stylists(user_id);
+  `);
+
   // Insert default services
   const serviceCount = db.prepare('SELECT COUNT(*) as count FROM services').get();
   if (serviceCount.count === 0) {

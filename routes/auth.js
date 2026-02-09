@@ -14,6 +14,24 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Validate phone format (basic: 10+ digits)
+    const phoneRegex = /^\d{10,}$/;
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (!phoneRegex.test(phoneDigits)) {
+      return res.status(400).json({ error: 'Invalid phone format (10+ digits required)' });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
     // Check if user already exists
     const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existingUser) {
@@ -30,9 +48,13 @@ router.post('/register', (req, res) => {
     `).run(email, phone, hashedPassword, name);
 
     // Generate token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET not configured');
+    }
     const token = jwt.sign(
       { id: result.lastInsertRowid, email, role: 'customer' },
-      process.env.JWT_SECRET || 'default-secret',
+      secret,
       { expiresIn: '7d' }
     );
 
@@ -69,9 +91,13 @@ router.post('/login', (req, res) => {
     }
 
     // Generate token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET not configured');
+    }
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'default-secret',
+      secret,
       { expiresIn: '7d' }
     );
 

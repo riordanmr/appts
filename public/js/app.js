@@ -6,8 +6,6 @@ let token = localStorage.getItem('token');
 let currentUser = null;
 let selectedTimeSlot = null;
 
-//!mrr Remove this.
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   if (token) {

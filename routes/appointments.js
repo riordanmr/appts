@@ -70,6 +70,11 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Service, date, and time are required' });
     }
 
+    // Validate notes length
+    if (notes && notes.length > 1000) {
+      return res.status(400).json({ error: 'Notes cannot exceed 1000 characters' });
+    }
+
     // Insert appointment
     const result = db.prepare(`
       INSERT INTO appointments (customer_id, stylist_id, service_id, appointment_date, appointment_time, notes)
@@ -198,6 +203,10 @@ router.put('/:id', authenticateToken, requireRole(['stylist', 'admin']), (req, r
       values.push(status);
     }
     if (notes !== undefined) {
+      // Validate notes length
+      if (notes.length > 1000) {
+        return res.status(400).json({ error: 'Notes cannot exceed 1000 characters' });
+      }
       updates.push('notes = ?');
       values.push(notes);
     }

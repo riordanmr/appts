@@ -5,6 +5,14 @@ const cors = require('cors');
 const path = require('path');
 const cron = require('node-cron');
 
+// Validate required environment variables
+const requiredEnvVars = ['JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingEnvVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const db = require('./database/db');
 const authRoutes = require('./routes/auth');
 const appointmentRoutes = require('./routes/appointments');
