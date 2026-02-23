@@ -128,21 +128,83 @@ async function loadAppointments() {
         
         const statusClass = `status-${apt.status}`;
         
-        card.innerHTML = `
-          <h4>${apt.customer_name}</h4>
-          <p><strong>Service:</strong> ${apt.service_name} (${apt.duration_minutes} min)</p>
-          <p><strong>Time:</strong> ${apt.appointment_time}</p>
-          <p><strong>Price:</strong> $${apt.price}</p>
-          <p><strong>Phone:</strong> ${apt.customer_phone}</p>
-          <p><strong>Email:</strong> ${apt.customer_email}</p>
-          <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${apt.status}</span></p>
-          ${apt.notes ? `<p><strong>Notes:</strong> ${apt.notes}</p>` : ''}
-          <div class="appointment-actions">
-            <button class="edit-btn" onclick="openEditModal(${apt.id}, '${apt.appointment_date}', '${apt.appointment_time}', '${apt.status}', '${apt.notes || ''}')">Edit</button>
-            <button class="delete-btn" onclick="deleteAppointment(${apt.id})">Delete</button>
-          </div>
-        `;
+        // Build card safely without innerHTML XSS vulnerability
+        const heading = document.createElement('h4');
+        heading.textContent = apt.customer_name;
+        card.appendChild(heading);
         
+        const serviceP = document.createElement('p');
+        serviceP.innerHTML = '<strong>Service:</strong> ';
+        const serviceSpan = document.createElement('span');
+        serviceSpan.textContent = `${apt.service_name} (${apt.duration_minutes} min)`;
+        serviceP.appendChild(serviceSpan);
+        card.appendChild(serviceP);
+        
+        const timeP = document.createElement('p');
+        timeP.innerHTML = '<strong>Time:</strong> ';
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = apt.appointment_time;
+        timeP.appendChild(timeSpan);
+        card.appendChild(timeP);
+        
+        const priceP = document.createElement('p');
+        priceP.innerHTML = '<strong>Price:</strong> ';
+        const priceSpan = document.createElement('span');
+        priceSpan.textContent = `$${apt.price}`;
+        priceP.appendChild(priceSpan);
+        card.appendChild(priceP);
+        
+        const phoneP = document.createElement('p');
+        phoneP.innerHTML = '<strong>Phone:</strong> ';
+        const phoneSpan = document.createElement('span');
+        phoneSpan.textContent = apt.customer_phone;
+        phoneP.appendChild(phoneSpan);
+        card.appendChild(phoneP);
+        
+        const emailP = document.createElement('p');
+        emailP.innerHTML = '<strong>Email:</strong> ';
+        const emailSpan = document.createElement('span');
+        emailSpan.textContent = apt.customer_email;
+        emailP.appendChild(emailSpan);
+        card.appendChild(emailP);
+        
+        const statusP = document.createElement('p');
+        statusP.innerHTML = '<strong>Status:</strong> ';
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status-badge ${statusClass}`;
+        statusBadge.textContent = apt.status;
+        statusP.appendChild(statusBadge);
+        card.appendChild(statusP);
+        
+        if (apt.notes) {
+          const notesP = document.createElement('p');
+          notesP.innerHTML = '<strong>Notes:</strong> ';
+          const notesSpan = document.createElement('span');
+          notesSpan.textContent = apt.notes;
+          notesP.appendChild(notesSpan);
+          card.appendChild(notesP);
+        }
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'appointment-actions';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          openEditModal(apt.id, apt.appointment_date, apt.appointment_time, apt.status, apt.notes || '');
+        });
+        actionsDiv.appendChild(editBtn);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          deleteAppointment(apt.id);
+        });
+        actionsDiv.appendChild(deleteBtn);
+        
+        card.appendChild(actionsDiv);
         container.appendChild(card);
       });
     });

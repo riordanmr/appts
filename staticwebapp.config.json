@@ -1,0 +1,46 @@
+{
+  "routes": [
+    {
+      "route": "/api/*",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allowedRoles": [],
+      "rewrite": "/api/*"
+    },
+    {
+      "route": "/stylist",
+      "rewrite": "/stylist.html"
+    },
+    {
+      "route": "/*",
+      "serve": "/index.html",
+      "statusCode": 200
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/css/*",
+      "/js/*",
+      "/api/*",
+      "*.json"
+    ]
+  },
+  "mimeTypes": {
+    ".json": "application/json",
+    ".wasm": "application/wasm"
+  },
+  "staticContent": [
+    {
+      "path": "/css",
+      "maxAge": 86400
+    },
+    {
+      "path": "/js",
+      "maxAge": 3600
+    },
+    {
+      "path": "/",
+      "maxAge": 300
+    }
+  ]
+}

@@ -75,6 +75,14 @@ app.http('createAppointment', {
         };
       }
 
+      // Validate notes length
+      if (notes && notes.length > 1000) {
+        return {
+          status: 400,
+          jsonBody: { error: 'Notes cannot exceed 1000 characters' }
+        };
+      }
+
       // Get user details
       const user = await getUserByEmail(auth.user.email);
       

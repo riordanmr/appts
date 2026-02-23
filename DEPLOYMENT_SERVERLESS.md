@@ -1,313 +1,305 @@
-# Deployment Guide for Azure Functions (Serverless)
+# Deployment Guide: Azure Static Web Apps + Functions
 
 ## Architecture Overview
 
-This application uses a **serverless architecture** with Azure Functions and Azure Table Storage - **no continuously running services** required!
-
-### Services Used
-- **Azure Functions**: Event-driven compute (HTTP triggers + Timer trigger)
-- **Azure Table Storage**: NoSQL storage for all data
-- **SendGrid**: Email notifications (100 free emails/day)
-- **Twilio**: SMS notifications (pay-per-use)
-
-### Cost Advantages
-- ✅ **No always-on compute costs** - only pay when functions execute
-- ✅ **Automatic scaling** - handles traffic spikes without manual intervention
-- ✅ **Zero-cost Table Storage tier** available with consumption plan
-- ✅ **1 million free function executions per month**
-
-## Prerequisites
-- Azure account
-- Azure CLI installed (optional, can use Azure Portal)
-- Node.js 18+ installed locally for testing
-
-## Deployment Steps
-
-### Option 1: Azure Portal Deployment
-
-#### 1. Create Azure Storage Account
-1. Go to Azure Portal (portal.azure.com)
-2. Create new Storage Account
-   - Performance: Standard
-   - Replication: LRS (Locally-Redundant Storage)
-   - Account kind: StorageV2
-3. After creation, go to "Access keys" and copy the connection string
-
-#### 2. Create Azure Function App
-1. Create new Function App
-   - Runtime: Node.js 18 LTS
-   - Operating System: Linux
-   - Plan type: **Consumption (Serverless)**
-   - Storage: Use the storage account created above
-2. After creation, go to Configuration → Application settings
-
-#### 3. Configure Environment Variables
-Add these application settings:
+This application uses a **true serverless architecture** optimized for cost and simplicity:
 
 ```
-AZURE_STORAGE_CONNECTION_STRING=<your-storage-connection-string>
-JWT_SECRET=<your-secure-random-string>
-EMAIL_API_KEY=<your-sendgrid-api-key>
-EMAIL_FROM=noreply@yourdomain.com
-TWILIO_ACCOUNT_SID=<your-twilio-account-sid>
-TWILIO_AUTH_TOKEN=<your-twilio-auth-token>
-TWILIO_PHONE_NUMBER=+1234567890
-BUSINESS_NAME=Your Salon Name
+Azure Static Web Apps (Frontend) - FREE
+├── Serves HTML/CSS/JS from global CDN
+├── Auto-routes /api/* to Azure Functions
+├── Handles HTTPS, HTTP/2, caching
+└── GitHub Actions auto-deploy
+
+Azure Functions (Backend) - PAY-PER-USE
+├── HTTP triggers for API endpoints
+├── Timer trigger for reminders
+└── Only costs when functions execute
+
+Azure Table Storage (Database) - MINIMAL
+├── NoSQL data persistence
+└── Free tier available
+```
+
+### Cost Breakdown
+- **Static Web Apps**: $0/month (free tier)
+- **Functions**: ~$0-1/month (1M executions free)
+- **Table Storage**: $0/month (free tier for small volume)
+- **Total**: **$0-1/month** for typical salon ✓
+
+## Prerequisites
+- Azure account (free tier available at https://azure.microsoft.com/en-us/free/)
+- GitHub account
+- Node.js 18+ (for local testing)
+
+## Deployment Steps (Recommended: GitHub Actions)
+
+### 1. Create Azure Static Web App
+
+1. Go to https://portal.azure.com
+2. Click "+ Create Resource" → Search "Static Web App"
+3. Fill in:
+   - **Name**: `appts-salon` (or your choice)
+   - **Free plan**: Select this ✓
+   - **Region**: East US (or closest to you)
+   - **Sign in with GitHub**: Click to authorize
+4. Select your GitHub repository and branch
+5. Build details:
+   - **Framework preset**: None (custom)
+   - **App location**: `./public`
+   - **API location**: (leave blank)
+   - **Output location**: (leave blank)
+6. Click "Review + Create" → "Create"
+
+**GitHub Actions is automatically configured!** Each push will deploy.
+
+### 2. Create Azure Storage Account
+
+1. Click "+ Create Resource" → Search "Storage Account"
+2. Fill in:
+   - **Name**: `appts<random>` (must be globally unique, lowercase alphanumeric only)
+   - **Region**: Same as Static Web App
+   - **Performance**: Standard
+   - **Redundancy**: LRS (Locally Redundant Storage)
+3. Click "Review + Create" → "Create"
+4. After creation:
+   - Go to "Access Keys" (in left sidebar)
+   - Copy **Connection String** (save this)
+
+### 3. Create Azure Function App
+
+1. Click "+ Create Resource" → Search "Function App"
+2. Fill in:
+   - **Name**: `appts-functions` (or your choice)
+   - **Runtime**: Node.js 18 LTS
+   - **Region**: Same as other resources
+   - **Plan type**: **Consumption (Serverless)** ✓
+   - **Storage account**: Select the one from Step 2
+3. Click "Review + Create" → "Create"
+
+### 4. Configure Function App
+
+After creation:
+
+1. Go to Function App → **Configuration** (left sidebar)
+2. Click **+ New application setting** and add each of these:
+
+```
+AZURE_STORAGE_CONNECTION_STRING=<paste-connection-string-from-step-2>
+JWT_SECRET=<generate-below>
 BUSINESS_HOURS_START=9
 BUSINESS_HOURS_END=18
 ```
 
-#### 4. Deploy Code
-Option A - Via GitHub:
-1. Go to Deployment Center in Function App
-2. Choose GitHub as source
-3. Authorize and select repository
-4. Choose branch and save
-5. Deployment happens automatically
+Optional (for notifications):
+```
+EMAIL_API_KEY=<sendgrid-api-key>
+EMAIL_FROM=noreply@yoursalon.com
+TWILIO_ACCOUNT_SID=<twilio-sid>
+TWILIO_AUTH_TOKEN=<twilio-auth-token>
+TWILIO_PHONE_NUMBER=+1234567890
+BUSINESS_NAME=Your Salon Name
+```
 
-Option B - Via VS Code:
-1. Install Azure Functions extension
-2. Sign in to Azure
-3. Right-click on Function App
-4. Select "Deploy to Function App"
-
-#### 5. Configure CORS (for local testing)
-1. Go to Function App → CORS
-2. Add `http://localhost:7071` for local testing
-3. Add your custom domain when deployed
-
-### Option 2: Azure CLI Deployment
-
+**Generate secure JWT_SECRET:**
 ```bash
-# Login to Azure
-az login
+# Mac/Linux
+openssl rand -base64 32
 
-# Create resource group
-az group create --name appts-rg --location eastus
-
-# Create storage account
-az storage account create \
-  --name apptstorageacct \
-  --resource-group appts-rg \
-  --location eastus \
-  --sku Standard_LRS
-
-# Get storage connection string
-STORAGE_CONNECTION=$(az storage account show-connection-string \
-  --name apptstorageacct \
-  --resource-group appts-rg \
-  --query connectionString -o tsv)
-
-# Create Function App (Consumption Plan)
-az functionapp create \
-  --name appts-func \
-  --resource-group appts-rg \
-  --consumption-plan-location eastus \
-  --runtime node \
-  --runtime-version 18 \
-  --functions-version 4 \
-  --storage-account apptstorageacct
-
-# Configure app settings
-az functionapp config appsettings set \
-  --name appts-func \
-  --resource-group appts-rg \
-  --settings \
-    AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONNECTION" \
-    JWT_SECRET="your-secret" \
-    EMAIL_API_KEY="your-sendgrid-key" \
-    EMAIL_FROM="noreply@yourdomain.com" \
-    TWILIO_ACCOUNT_SID="your-sid" \
-    TWILIO_AUTH_TOKEN="your-token" \
-    TWILIO_PHONE_NUMBER="+1234567890" \
-    BUSINESS_NAME="Your Salon"
-
-# Deploy code (from repository root)
-func azure functionapp publish appts-func
+# Or Python
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-## Local Development
+Click **Save** after each addition.
 
-### 1. Install Azure Functions Core Tools
+### 5. Link Functions to Static Web App
+
+1. Go to Static Web App → **API configuration** (left sidebar)
+2. Fill in:
+   - **Backend resource type**: Function App
+   - **Subscription**: Select your subscription
+   - **Backend resource name**: `appts-functions`
+   - **Backend path**: `/api`
+3. Click **Save**
+
+### 6. Deploy Functions Code
+
+The code is deployed when you push to GitHub. Make sure your repo structure is:
+
+```
+/public/           (already in repo)
+/src/functions/    (already in repo)
+/staticwebapp.config.json  (already in repo)
+package.json       (already in repo)
+```
+
+Push any changes:
 ```bash
-npm install -g azure-functions-core-tools@4
+git add .
+git commit -m "Deploy to Azure"
+git push origin main
 ```
 
-### 2. Create local.settings.json
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
-    "JWT_SECRET": "test-secret",
-    "BUSINESS_NAME": "Test Salon",
-    "BUSINESS_HOURS_START": "9",
-    "BUSINESS_HOURS_END": "18"
-  }
-}
-```
+Check deployment:
+1. Go to Static Web App → **Workflows** (in GitHub settings)
+2. Should see successful workflow run
 
-### 3. Install Azurite (Storage Emulator)
-```bash
-npm install -g azurite
-```
+### 7. Verify Deployment
 
-### 4. Run Locally
-```bash
-# Terminal 1: Start Azurite
-azurite --silent --location ./azurite --debug ./azurite/debug.log
+After 2-3 minutes:
 
-# Terminal 2: Start Functions
-npm start
-# or
-func start
+1. Go to Static Web App → **Overview**
+2. Click the **URL** (something like `https://kind-river-abc123.azurestaticapps.net`)
+3. You should see the customer portal
 
-# Access at http://localhost:7071
-```
+**Test the system:**
+- Login: `admin@salon.com` / `admin123`
+- Check `/stylist` page
+- Check `/api/health` should return `{"status":"healthy"}`
 
-## Third-Party Services Setup
+## Optional: Set Up Notifications
 
 ### SendGrid (Email)
-1. Sign up at sendgrid.com
-2. Create API key with "Mail Send" permissions
-3. Verify sender email
-4. Add API key to Azure Function App settings
+
+1. Sign up at https://sendgrid.com (free tier: 100 emails/day)
+2. Create API key:
+   - Settings → API Keys → Create Key
+   - Select "Mail Send" permission only
+   - Copy the key
+3. Add to Function App settings:
+   ```
+   EMAIL_API_KEY=<your-key>
+   EMAIL_FROM=noreply@yoursalon.com
+   ```
 
 ### Twilio (SMS)
-1. Sign up at twilio.com
-2. Get account SID and auth token
-3. Get a Twilio phone number
-4. Add credentials to Azure Function App settings
 
-## Cost Breakdown (Serverless) 💰
+1. Sign up at https://twilio.com (pay-as-you-go)
+2. Get credentials from Dashboard:
+   - Account SID
+   - Auth Token
+   - Buy/verify a phone number
+3. Add to Function App settings:
+   ```
+   TWILIO_ACCOUNT_SID=<sid>
+   TWILIO_AUTH_TOKEN=<token>
+   TWILIO_PHONE_NUMBER=+1234567890
+   ```
 
-### Azure Services
-- **Azure Functions**: 
-  - First 1M executions/month: FREE
-  - Typical usage for small salon: ~50K executions/month
-  - Cost: $0/month (within free tier)
-  
-- **Azure Table Storage**:
-  - First 100GB: FREE with consumption plan
-  - Typical usage: < 1GB
-  - Cost: $0/month
+## Post-Deployment
 
-- **Bandwidth**:
-  - First 100GB outbound: FREE
-  - Cost: $0/month
+### ⚠️ Change Default Admin Password
 
-### Third-Party Services
-- **SendGrid**: Free tier (100 emails/day) - $0/month
-- **Twilio SMS**: ~$0.0075 per SMS
-  - Estimate 100 SMS/month: ~$0.75/month
+Default credentials are:
+- Email: `admin@salon.com`
+- Password: `admin123`
 
-**Total Estimated Cost: $0-2/month** 🎉
+**You MUST change this!** 
+- Log in to stylist portal
+- There's no password change UI yet—manually update in Table Storage via Azure Portal
 
-Compare to previous architecture:
-- Old: $15-20/month (always-on VM)
-- New: $0-2/month (serverless)
-- **Savings: ~$200/year!**
+### Add Stylists
 
-## API Endpoints
+Currently no admin UI for adding stylists. Manual options:
 
-All functions are accessible via Function App URL:
-```
-https://<your-function-app>.azurewebsites.net/api/
-```
+**Option 1: Azure Portal**
+1. Go to Storage Account → Tables
+2. Find `stylists` table
+3. Add entity with properties:
+   - `partitionKey`: STYLIST
+   - `rowKey`: stylist-{uniqueid}
+   - `name`: Stylist name
+   - `bio`: Bio (optional)
+   - `active`: true
 
-### Authentication
-- POST `/api/register` - Register new user
-- POST `/api/login` - User login
-
-### Services & Stylists
-- GET `/api/services` - List all services
-- GET `/api/stylists` - List all stylists
-
-### Appointments
-- GET `/api/appointments/availability` - Get available time slots
-- POST `/api/appointments` - Create appointment (requires auth)
-- GET `/api/appointments/my-appointments` - Get user's appointments (requires auth)
-- GET `/api/appointments/stylist-appointments` - Get stylist's appointments (requires stylist auth)
-- PUT `/api/appointments/{id}` - Update appointment (requires stylist auth)
-- DELETE `/api/appointments/{id}` - Delete appointment (requires stylist auth)
-
-### Scheduled Functions
-- Timer trigger: Runs hourly to send appointment reminders
-
-## Monitoring
-
-### View Logs
-1. Go to Function App in Azure Portal
-2. Select "Log stream" to see real-time logs
-3. Or use Application Insights for detailed analytics
-
-### Enable Application Insights (Recommended)
-1. Go to Function App → Application Insights
-2. Click "Turn on Application Insights"
-3. Create new instance or use existing
-4. View metrics, logs, and performance data
+**Option 2: Code solution** (future enhancement)
+- Add admin panel to `/admin` route
+- Add stylists UI before deployment
 
 ## Troubleshooting
 
-### Functions not executing
-- Check Application Settings are configured
-- Verify Storage Account connection string
-- Review Function App logs
+### Static Web App returns 404
 
-### Table Storage errors
-- Ensure AZURE_STORAGE_CONNECTION_STRING is set
-- Verify storage account is accessible
-- Check firewall rules if using network restrictions
+**Cause**: `staticwebapp.config.json` not deployed
 
-### Email/SMS not sending
-- Verify SendGrid API key and sender verification
-- Check Twilio credentials and phone number
-- Review function logs for specific errors
+**Fix**:
+1. Verify file is in repo root
+2. Push changes: `git add . && git commit -m "fix" && git push`
+3. Check GitHub Actions workflow succeeds
 
-## Scaling
+### Can't log in / Functions error
 
-The serverless architecture automatically scales:
-- **Automatic**: Azure manages scaling based on load
-- **No configuration needed**: Works out of the box
-- **Cost-effective**: Only pay for actual usage
-- **Handles spikes**: Can scale to thousands of concurrent requests
+**Cause**: Missing environment variables
 
-## Security
+**Fix**:
+1. Go to Function App → Configuration
+2. Verify all `AZURE_STORAGE_CONNECTION_STRING` and `JWT_SECRET` are set
+3. Click **Save**
+4. Go to Overview → **Restart**
 
-- ✅ HTTPS enforced by default on Azure Functions
-- ✅ Managed service updates (no VM patching required)
-- ✅ Environment variables stored securely in App Settings
-- ✅ Optional: Enable authentication/authorization in Function App settings
-- ✅ Optional: Integrate with Azure AD for enterprise auth
+### High Azure bill
 
-## Backup & Disaster Recovery
+**Cause**: Usually API spam or infinite loops
 
-### Data Backup
-Azure Table Storage provides:
-- Built-in redundancy (LRS/GRS)
-- Point-in-time restore (if enabled)
-- Export data using Azure Storage Explorer
+**Fix**:
+1. Check Function App → Monitor
+2. See which function is executing most
+3. Check logs: Function App → Log Stream
+4. First 1M executions/month are free
 
-### Function Code
-- Stored in GitHub (version controlled)
-- Automated deployment from repository
-- Easy rollback to previous versions
+## Local Development & Testing
 
-## Next Steps
+For testing locally before deploying:
 
-After deployment:
-1. Test all endpoints using the Function App URL
-2. Set up monitoring alerts in Application Insights
-3. Configure custom domain (optional)
-4. Enable authentication providers (optional)
-5. Set up staging slots for testing (optional)
+```bash
+# 1. Install dependencies
+npm install
+npm install -g azure-functions-core-tools@4
+npm install -g azurite
 
-## Support
+# 2. Create .env file
+cat > src/functions/.env << EOF
+AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+JWT_SECRET=dev-secret-key
+BUSINESS_HOURS_START=9
+BUSINESS_HOURS_END=18
+EOF
 
-For issues or questions:
-1. Check function logs in Azure Portal
-2. Review Application Insights for errors
-3. Verify environment variables are set correctly
-4. Test locally with Azurite for debugging
+# 3. Start local storage (Terminal 1)
+azurite --silent --location ./azurite-data
+
+# 4. Start Functions (Terminal 2)
+npm start
+
+# 5. Serve static files (Terminal 3)
+npx http-server ./public -p 8080
+
+# 6. Open browsers
+# Customer: http://localhost:8080
+# Stylist: http://localhost:8080/stylist
+# API: http://localhost:7071/api/health
+```
+
+## Monitoring & Logs
+
+### View Function Logs
+
+1. Go to Function App → **Log Stream**
+2. See real-time output:
+   ```
+   [INFO] Running reminder check...
+   [INFO] Sent 3 reminder(s)
+   ```
+
+### View Static Web App Logs
+
+1. Go to Static Web App → **Build history**
+2. Click latest workflow
+3. See deployment logs
+
+## Need Help?
+
+- **Azure Support**: portal.azure.com → Help + Support
+- **GitHub Actions Logs**: Your repo → Actions → Latest run
+- **Function Logs**: Function App → Log Stream
+- **Documentation**: https://learn.microsoft.com/en-us/azure/azure-functions/

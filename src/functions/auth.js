@@ -20,6 +20,33 @@ app.http('register', {
         };
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return {
+          status: 400,
+          jsonBody: { error: 'Invalid email format' }
+        };
+      }
+
+      // Validate phone format (basic: 10+ digits)
+      const phoneRegex = /^\d{10,}$/;
+      const phoneDigits = phone.replace(/\D/g, '');
+      if (!phoneRegex.test(phoneDigits)) {
+        return {
+          status: 400,
+          jsonBody: { error: 'Invalid phone format (10+ digits required)' }
+        };
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        return {
+          status: 400,
+          jsonBody: { error: 'Password must be at least 8 characters' }
+        };
+      }
+
       // Check if user already exists
       const existingUser = await getUserByEmail(email);
       if (existingUser) {
@@ -30,7 +57,7 @@ app.http('register', {
       }
 
       // Hash password
-      const hashedPassword = bcrypt.hashSync(password, 10);
+      const hashedPassword = bcrypt.hashSync(password, 12);
 
       // Create user
       await createUser({
@@ -42,9 +69,16 @@ app.http('register', {
       });
 
       // Generate token
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        return {
+          status: 500,
+          jsonBody: { error: 'Server configuration error' }
+        };
+      }
       const token = jwt.sign(
         { email, role: 'customer' },
-        process.env.JWT_SECRET || 'default-secret',
+        secret,
         { expiresIn: '7d' }
       );
 
@@ -102,9 +136,16 @@ app.http('login', {
       }
 
       // Generate token
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        return {
+          status: 500,
+          jsonBody: { error: 'Server configuration error' }
+        };
+      }
       const token = jwt.sign(
         { email: user.email, role: user.role },
-        process.env.JWT_SECRET || 'default-secret',
+        secret,
         { expiresIn: '7d' }
       );
 

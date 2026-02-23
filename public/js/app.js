@@ -219,7 +219,7 @@ async function loadAvailability() {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'time-slot';
         slotDiv.textContent = slot;
-        slotDiv.onclick = () => selectTimeSlot(slot, slotDiv);
+        slotDiv.addEventListener('click', () => selectTimeSlot(slot, slotDiv));
         timeSlotsContainer.appendChild(slotDiv);
       });
     } else {
@@ -327,15 +327,55 @@ async function loadMyAppointments() {
       const statusClass = `status-${apt.status}`;
       const stylistName = apt.stylist_name || 'Any available stylist';
       
-      card.innerHTML = `
-        <h4>${apt.service_name}</h4>
-        <p><strong>Date:</strong> ${apt.appointment_date}</p>
-        <p><strong>Time:</strong> ${apt.appointment_time}</p>
-        <p><strong>Stylist:</strong> ${stylistName}</p>
-        <p><strong>Price:</strong> $${apt.price}</p>
-        <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${apt.status}</span></p>
-        ${apt.notes ? `<p><strong>Notes:</strong> ${apt.notes}</p>` : ''}
-      `;
+      // Build card safely without XSS vulnerability
+      const heading = document.createElement('h4');
+      heading.textContent = apt.service_name;
+      card.appendChild(heading);
+      
+      const dateP = document.createElement('p');
+      dateP.innerHTML = '<strong>Date:</strong> ';
+      const dateSpan = document.createElement('span');
+      dateSpan.textContent = apt.appointment_date;
+      dateP.appendChild(dateSpan);
+      card.appendChild(dateP);
+      
+      const timeP = document.createElement('p');
+      timeP.innerHTML = '<strong>Time:</strong> ';
+      const timeSpan = document.createElement('span');
+      timeSpan.textContent = apt.appointment_time;
+      timeP.appendChild(timeSpan);
+      card.appendChild(timeP);
+      
+      const stylistP = document.createElement('p');
+      stylistP.innerHTML = '<strong>Stylist:</strong> ';
+      const stylistSpan = document.createElement('span');
+      stylistSpan.textContent = stylistName;
+      stylistP.appendChild(stylistSpan);
+      card.appendChild(stylistP);
+      
+      const priceP = document.createElement('p');
+      priceP.innerHTML = '<strong>Price:</strong> ';
+      const priceSpan = document.createElement('span');
+      priceSpan.textContent = `$${apt.price}`;
+      priceP.appendChild(priceSpan);
+      card.appendChild(priceP);
+      
+      const statusP = document.createElement('p');
+      statusP.innerHTML = '<strong>Status:</strong> ';
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `status-badge ${statusClass}`;
+      statusBadge.textContent = apt.status;
+      statusP.appendChild(statusBadge);
+      card.appendChild(statusP);
+      
+      if (apt.notes) {
+        const notesP = document.createElement('p');
+        notesP.innerHTML = '<strong>Notes:</strong> ';
+        const notesSpan = document.createElement('span');
+        notesSpan.textContent = apt.notes;
+        notesP.appendChild(notesSpan);
+        card.appendChild(notesP);
+      }
       
       container.appendChild(card);
     });

@@ -8,8 +8,13 @@ function authenticateToken(request) {
     return { authenticated: false, error: 'Access token required' };
   }
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return { authenticated: false, error: 'Server configuration error' };
+  }
+
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET || 'default-secret');
+    const user = jwt.verify(token, secret);
     return { authenticated: true, user };
   } catch (error) {
     return { authenticated: false, error: 'Invalid or expired token' };
